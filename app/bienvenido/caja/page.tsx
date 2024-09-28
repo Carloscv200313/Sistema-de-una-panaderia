@@ -1,7 +1,8 @@
 export default function Home() {
+
     return (
         <div>
-            <h1>inventario</h1>
+            <h1>caja</h1>
         </div>
     );
 }
