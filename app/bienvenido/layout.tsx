@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "../globals.css";
+import { SidebarDemo } from '@/sidebar/contenido_sidebar';
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,8 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="h-screen w-screen" >
+      <body>
+        <SidebarDemo>
           {children}
+        </SidebarDemo>
       </body>
     </html>
   );
