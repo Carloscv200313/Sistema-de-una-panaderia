@@ -1,13 +1,12 @@
 "use client";
+import Image from "next/image"
 import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "../components/ui/sidebar";
 import {
     IconUserBolt,
 } from "@tabler/icons-react";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { IconLogout, IconPremiumRights } from '@tabler/icons-react';
-
 export function SidebarDemo({ children }: { children: React.ReactNode }) {
     const links = [
         {
@@ -76,8 +75,8 @@ export function SidebarDemo({ children }: { children: React.ReactNode }) {
             <Sidebar open={open} setOpen={setOpen}>
                 <SidebarBody className="justify-between gap-10">
                     <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-                        
-                        <div className="mt-8 flex flex-col gap-2">
+                        {open ? <Logo /> : <LogoIcon />}
+                        <div className="mt-0 flex flex-col gap-2">
                             {links.map((link, idx) => (
                                 <SidebarLink key={idx} link={link} />
                             ))}
@@ -98,21 +97,30 @@ export function SidebarDemo({ children }: { children: React.ReactNode }) {
             </Sidebar>
 
             {/* Contenido que se muestra debajo del sidebar en pantallas pequeñas */}
-            <main className="p-4 w-full md:w-auto md:flex-1">
+            <main className="p-0 w-full md:w-auto md:flex-1 h-screen overflow-auto overflow-y-hidden">
                 {children}
             </main>
+
         </div>
     );
 }
-
+export const Logo = () => {
+    return (
+        <>
+            <Image
+                className="h-80 w-80"
+                src="/img/logo-1.png"
+                alt="Imagen de la empresa"
+                width={20000}
+                height={10000}
+            />
+        </>
+    );
+};
 
 export const LogoIcon = () => {
     return (
-        <Link
-            href="#"
-            className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
-        >
-            <div className="h-5 w-6 bg-black dark:bg-white rounded-br-lg rounded-tr-sm rounded-tl-lg rounded-bl-sm flex-shrink-0" />
-        </Link>
+        <>
+        </>
     );
 };

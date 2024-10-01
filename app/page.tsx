@@ -17,12 +17,33 @@ export default function Home() {
         setShowPassword(!showPassword);
     };
 
-    const verificar = (e: React.FormEvent) => {
+    const verificar = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (email === "hola" && password === "123456") {
-            router.push('/bienvenido');
-        } else {
-            alert("Credenciales incorrectas");
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: email,
+                    password: password,
+                }),
+            });
+
+            const data = await response.json();
+            console.log(data);
+            if (!data.Mensaje) {
+                // Si las credenciales son correctas, redirigir a la página de bienvenida
+                router.push('/bienvenido');
+            } else {
+                // Mostrar un mensaje de error si las credenciales son incorrectas
+                alert(data.message || "Credenciales incorrectas");
+            }
+        } catch (error) {
+            console.error("Error en el inicio de sesión:", error);
+            alert("Error en el servidor, por favor intente de nuevo más tarde.");
         }
     };
 
