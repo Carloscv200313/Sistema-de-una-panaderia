@@ -39,7 +39,7 @@ export default function Home() {
                 router.push('/bienvenido');
             } else {
                 // Mostrar un mensaje de error si las credenciales son incorrectas
-                alert(data.message || "Credenciales incorrectas");
+                alert(data.Mensaje);
             }
         } catch (error) {
             console.error("Error en el inicio de sesión:", error);
@@ -122,6 +122,7 @@ export default function Home() {
             </div>
             <div className="relative hidden w-0 flex-1 lg:block">
                 <Image
+                    
                     className="absolute inset-0 h-full w-auto object-cover"
                     src="/img/fondo.webp"
                     alt="Imagen de la empresa"

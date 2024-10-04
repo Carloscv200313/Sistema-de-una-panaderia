@@ -4,7 +4,7 @@ import { dbConnect } from '../../../utils/dbConnect';  // Ruta para conectar con
 import sql from 'mssql'; 
 export async function GET() {
   const pool = await dbConnect();
-  const result = await pool.request().query('EXEC ListadoEmpleados;');
+  const result = await pool.request().query('EXEC ListadoEmpleados @FiltroActivo = 1;');
   return NextResponse.json(result.recordset);
 }
 

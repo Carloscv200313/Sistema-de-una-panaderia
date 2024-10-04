@@ -26,27 +26,25 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
-    const { id } = params;
-    const data = await req.json(); 
+    const { id } = params;  // id del empleado a actualizar
+    const data = await req.json();  // Se recibe el cuerpo de la solicitud en formato JSON
 
     try {
         const pool = await dbConnect();
         // Actualizar datos personales del empleado
         await pool.request()
-            .input('id', sql.VarChar, id)
-            .input('Nombre', sql.VarChar, data.Nombre)
-            .input('Apellido', sql.VarChar, data.Apellido)
-            .input('Telefono', sql.VarChar, data.Telefono)
-            .query('UPDATE empleados SET Nombre = @Nombre, Apellido = @Apellido, Telefono = @Telefono WHERE ID_empleado = @id');
-        
-        // Obtener los datos actualizados
-        const result = await pool.request()
-            .input('id', sql.VarChar, id)
-            .query('SELECT * FROM empleados WHERE ID_empleado = @id');
-
-        return NextResponse.json(result.recordset[0]);
+            .input('ID_empleado', sql.Int, id)              // Cambiar de ID_producto a ID_empleado
+            .input('DNI', sql.VarChar, data.dni)            // Pasar el DNI desde el JSON
+            .input('Nombre', sql.VarChar, data.nombre)      // Pasar el nombre desde el JSON
+            .input('Apellido', sql.VarChar, data.apellido)  // Pasar el apellido desde el JSON
+            .input('Telefono', sql.VarChar, data.telefono)  // Pasar el teléfono desde el JSON
+            .input('Direccion', sql.VarChar, data.direccion) // Pasar la dirección desde el JSON
+            .input('Activo', sql.Bit, data.activo)          // Estado activo (0 o 1)
+            .input('ID_cargo', sql.Int, data.cargo)         // El cargo del empleado
+            .execute('EditarEmpleado');  // Usar el procedimiento almacenado correcto
+        return NextResponse.json({ message: 'Empleado actualizado correctamente' });
     } catch (error) {
-        console.error('Error al actualizar datos personales:', error);
+        console.error('Error al actualizar datos del empleado:', error);
         return NextResponse.json({ error: 'Error en el servidor' }, { status: 500 });
     }
 }

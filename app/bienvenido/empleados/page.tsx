@@ -1,8 +1,8 @@
-import { EmployeeTableComponent } from "@/components/employee-table";
+import { EmpleadoTableComponent } from "@/components/employee-table";
 export default function Home() {
     return (
         <div >
-            <EmployeeTableComponent/>
+            <EmpleadoTableComponent/>
         </div>
     );
 }
