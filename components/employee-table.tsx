@@ -1,15 +1,26 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { crearEmpleado, empleados } from '@/consultas/empleados'; // Asegúrate de que la función empleados esté definida
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useEffect, useState } from "react";
+import { crearEmpleado, empleados } from "@/consultas/empleados";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-
-import { Pencil, UserPlus, BarChart } from 'lucide-react';
-import { Line } from 'react-chartjs-2';
-import { actualizarEmpleado } from '../consultas/empleados';
+import { Pencil, UserPlus, ClipboardList } from 'lucide-react'
+import { actualizarEmpleado } from "../consultas/empleados";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,7 +30,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
 
 ChartJS.register(
   CategoryScale,
@@ -32,16 +43,15 @@ ChartJS.register(
 );
 
 interface EmpleadoUpdate {
-  ID_empleado: number;
-  Nombre: string;
-  Apellido: string;
-  Cargo: string;
-  Telefono: string;
-  Direccion: string;
+  id_empleado: number;
+  dni: string;
+  nombre: string;
+  apellido: string;
+  cargo: string;
+  telefono: string;
+  direccion: string;
+  activo: number;
 }
-
-
-
 
 interface Empleado {
   ID_empleado: number;
@@ -51,10 +61,10 @@ interface Empleado {
   Telefono: string;
   Direccion: string;
   estado_empleado: string; // "Activo" o "Inactivo"
-  weeklySales?: number[]; // Ventas semanales (opcional)
 }
 
 interface newEmpleado {
+  dni: string;
   nombre: string;
   apellido: string;
   cargo: string;
@@ -63,7 +73,24 @@ interface newEmpleado {
   usuario: string;
   contraseña: string;
 }
+interface SelectedEmployeeSales {
+  Nombre: string;
+  Apellido: string;
+  sales: Array<{
+    id: number;
+    date: string;
+    product: string;
+    amount: number;
+  }>;
+}
 
+const inversaCargos: { [key: string]: number } = {
+  Cocinero: 1,
+  Cajero: 2,
+  Repartidor: 3,
+  Gerente: 4,
+  Ayudante: 5,
+};
 
 
 export const EmpleadoTableComponent = () => {
@@ -82,20 +109,23 @@ export const EmpleadoTableComponent = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [newEmpleado, setNewEmpleado] = useState({
+    dni: "",
     nombre: "",
     apellido: "",
     cargo: "Cajero", // Valor por defecto
     telefono: "",
     direccion: "",
     usuario: "",
-    contraseña: ""
+    contraseña: "",
   });
 
-  const [empleadoEditado, setempleadoEditado] = useState<Empleado | null>(null);
+  const [empleadoEditado, setempleadoEditado] = useState<EmpleadoUpdate | null>(
+    null
+  );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
-  const [selectedEmpleadoStats, setSelectedEmpleadoStats] = useState<Empleado | null>(null);
+  const [isSalesModalOpen, setIsSalesModalOpen] = useState(false)
+  const [selectedEmployeeSales, setSelectedEmployeeSales] = useState<SelectedEmployeeSales | null>(null)
 
   // Búsqueda optimizada de empleados
   const handleSearch = (term: string) => {
@@ -106,127 +136,98 @@ export const EmpleadoTableComponent = () => {
     } else {
       // Filtramos los empleados que coincidan con el término de búsqueda
       const filtered = Empleados.filter((emp) =>
-        `${emp.Nombre} ${emp.Apellido}`.toLowerCase().includes(term.toLowerCase().trim())
+        `${emp.Nombre} ${emp.Apellido}`
+          .toLowerCase()
+          .includes(term.toLowerCase().trim())
       );
       setDisplayEmpleados(filtered);
     }
   };
 
+  // Modificar handleOpenSalesModal para hacer la llamada API
+  const handleOpenSalesModal = async (empleado: Empleado) => {
+    try {
+      const response = await fetch(`/api/empleados/ventas/${empleado.ID_empleado}`);
+      const data = await response.json();
+
+      setSelectedEmployeeSales({
+        Nombre: empleado.Nombre,
+        Apellido: empleado.Apellido,
+        sales: data.map((sale: { ID_venta: unknown; Fecha: string | number | Date; ProductosVendidos: unknown; Total: unknown; }) => ({
+          id: sale.ID_venta,
+          date: new Date(sale.Fecha).toLocaleDateString(), // Formatear la fecha
+          product: sale.ProductosVendidos, // Lista de productos vendidos
+          amount: sale.Total // Monto de la venta
+        }))
+      });
+      setIsSalesModalOpen(true); // Abrir el modal después de cargar los datos
+    } catch (error) {
+      console.error("Error al obtener las ventas del empleado:", error);
+      alert("Error al cargar las ventas. Intenta de nuevo.");
+    }
+  };
+
   // Agregar un nuevo empleado
   const handleAddEmpleado = async () => {
-    if (newEmpleado.nombre && newEmpleado.apellido && newEmpleado.telefono && newEmpleado.direccion && newEmpleado.usuario && newEmpleado.contraseña) {
-      const newEmp: Empleado = {
-        ID_empleado: Date.now(), // Generar un ID temporal
-        Nombre: newEmpleado.nombre,
-        Apellido: newEmpleado.apellido,
-        Cargo: newEmpleado.cargo || "Cajero", // Asignar "Cajero" si no se define un cargo
-        Telefono: newEmpleado.telefono,
-        Direccion: newEmpleado.direccion,
-        estado_empleado: 'Activo'
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    if (
+      newEmpleado.nombre &&
+      newEmpleado.apellido &&
+      newEmpleado.telefono &&
+      newEmpleado.direccion &&
+      newEmpleado.usuario &&
+      newEmpleado.contraseña
+    ) {
       const nuevo: newEmpleado = {
+        dni: newEmpleado.dni,
         nombre: newEmpleado.nombre,
         apellido: newEmpleado.apellido,
-        cargo: newEmpleado.cargo || "Cajero", // Asignar "Cajero" si no se define un cargo
+        cargo: newEmpleado.cargo, // Guardar el número del cargo en la base de datos
         telefono: newEmpleado.telefono,
         direccion: newEmpleado.direccion,
         usuario: newEmpleado.usuario,
         contraseña: newEmpleado.contraseña,
       };
-      console.log(nuevo)
+
+      console.log(nuevo);
       // Ejecutar la actualización del empleado en la base de datos
       await crearEmpleado(nuevo);
-      // Actualizar los estados de empleados
-      setEmpleados((prevEmpleados) => [...prevEmpleados, newEmp]);
-      setDisplayEmpleados((prevEmpleados) => [...prevEmpleados, newEmp]); // Actualizar los empleados mostrados
 
-      // Resetear el formulario para nuevo empleado
-      setNewEmpleado({
-        nombre: "",
-        apellido: "",
-        cargo: "Cajero", // Valor por defecto
-        telefono: "",
-        direccion: "",
-        usuario: "",
-        contraseña: ""
-      });
-      setIsAddModalOpen(false); // Cerrar el modal
+      // Refrescar la página después de crear un empleado
+      window.location.reload();
     } else {
       alert("Por favor, complete todos los campos"); // Alerta si faltan campos
     }
   };
-
-
 
   // Editar un empleado existente
   const handleEditEmpleado = async () => {
     if (empleadoEditado) {
       try {
         // Extraer los campos a actualizar junto con el ID_empleado
-        const { ID_empleado, Nombre, Apellido, Cargo, Telefono, Direccion } = empleadoEditado;
+        const { id_empleado, dni, nombre, apellido, cargo, telefono, direccion, activo } =
+          empleadoEditado;
+        console.log(empleadoEditado);
 
-        // Crear un objeto solo con los campos que quieres enviar
-        const empleadoActualizado: EmpleadoUpdate = {
-          ID_empleado, // Incluimos ID para identificar al empleado en la base de datos
-          Nombre,
-          Apellido,
-          Cargo,
-          Telefono,
-          Direccion
-        };
-        console.log(empleadoActualizado)
         // Ejecutar la actualización del empleado en la base de datos
-        await actualizarEmpleado(empleadoActualizado);
+        await actualizarEmpleado({
+          id_empleado,
+          dni,
+          nombre,
+          apellido,
+          cargo,
+          telefono,
+          direccion,
+          activo,
+        });
 
-        // Si la actualización es exitosa, actualizar el estado local
-        setEmpleados(
-          Empleados.map((emp) =>
-            emp.ID_empleado === empleadoEditado.ID_empleado ? empleadoEditado : emp
-          )
-        );
-
-        // Actualizar también los empleados mostrados (filtrados o no)
-        setDisplayEmpleados(
-          displayEmpleados.map((emp) =>
-            emp.ID_empleado === empleadoEditado.ID_empleado ? empleadoEditado : emp
-          )
-        );
-
-        // Cerrar el modal de edición
-        setIsEditModalOpen(false);
-
-        console.log('Empleado actualizado correctamente');
+        // Refrescar la página después de editar un empleado
+        window.location.reload();
       } catch (error) {
-        console.error('Error al actualizar empleado:', error);
-        alert('Error al actualizar el empleado. Inténtalo de nuevo.');
+        console.error("Error al actualizar empleado:", error);
+        alert("Error al actualizar el empleado. Inténtalo de nuevo.");
       }
     }
   };
-
-
-
-
-  // Abrir modal de estadísticas de un empleado específico
-  const handleOpenStatsModal = (Empleado: Empleado) => {
-    setSelectedEmpleadoStats(Empleado);
-    setIsStatsModalOpen(true);
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      title: {
-        display: true,
-        text: "Ventas Semanales",
-      },
-    },
-  };
-
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Lista de Empleados</h1>
@@ -240,6 +241,7 @@ export const EmpleadoTableComponent = () => {
           onChange={(e) => handleSearch(e.target.value)} // Función optimizada de búsqueda
           className="max-w-sm"
         />
+
         {/* Modal para añadir empleado */}
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
           <DialogTrigger asChild>
@@ -254,12 +256,27 @@ export const EmpleadoTableComponent = () => {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="nombre" className="text-right">
+                  DNI
+                </Label>
+                <Input
+                  id="dni"
+                  value={newEmpleado.dni}
+                  onChange={(e) =>
+                    setNewEmpleado({ ...newEmpleado, dni: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="nombre" className="text-right">
                   Nombre
                 </Label>
                 <Input
                   id="nombre"
                   value={newEmpleado.nombre}
-                  onChange={(e) => setNewEmpleado({ ...newEmpleado, nombre: e.target.value })}
+                  onChange={(e) =>
+                    setNewEmpleado({ ...newEmpleado, nombre: e.target.value })
+                  }
                   className="col-span-3"
                 />
               </div>
@@ -270,7 +287,9 @@ export const EmpleadoTableComponent = () => {
                 <Input
                   id="apellido"
                   value={newEmpleado.apellido}
-                  onChange={(e) => setNewEmpleado({ ...newEmpleado, apellido: e.target.value })}
+                  onChange={(e) =>
+                    setNewEmpleado({ ...newEmpleado, apellido: e.target.value })
+                  }
                   className="col-span-3"
                 />
               </div>
@@ -278,14 +297,22 @@ export const EmpleadoTableComponent = () => {
                 <Label htmlFor="cargo" className="text-right">
                   Cargo
                 </Label>
-                <Input
+                <select
                   id="cargo"
                   value={newEmpleado.cargo}
-                  onChange={(e) => setNewEmpleado({ ...newEmpleado, cargo: e.target.value })}
-                  className="col-span-3"
-                  placeholder="Cajero" // Valor por defecto
-                />
+                  onChange={(e) =>
+                    setNewEmpleado({ ...newEmpleado, cargo: e.target.value })
+                  }
+                  className="col-span-3 border rounded-md p-2"
+                >
+                  <option value="1">Cocinero</option>
+                  <option value="2">Cajero</option>
+                  <option value="3">Repartidor</option>
+                  <option value="4">Gerente</option>
+                  <option value="5">Ayudante</option>
+                </select>
               </div>
+
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="telefono" className="text-right">
                   Teléfono
@@ -293,7 +320,9 @@ export const EmpleadoTableComponent = () => {
                 <Input
                   id="telefono"
                   value={newEmpleado.telefono}
-                  onChange={(e) => setNewEmpleado({ ...newEmpleado, telefono: e.target.value })}
+                  onChange={(e) =>
+                    setNewEmpleado({ ...newEmpleado, telefono: e.target.value })
+                  }
                   className="col-span-3"
                 />
               </div>
@@ -304,7 +333,12 @@ export const EmpleadoTableComponent = () => {
                 <Input
                   id="direccion"
                   value={newEmpleado.direccion}
-                  onChange={(e) => setNewEmpleado({ ...newEmpleado, direccion: e.target.value })}
+                  onChange={(e) =>
+                    setNewEmpleado({
+                      ...newEmpleado,
+                      direccion: e.target.value,
+                    })
+                  }
                   className="col-span-3"
                 />
               </div>
@@ -315,7 +349,9 @@ export const EmpleadoTableComponent = () => {
                 <Input
                   id="usuario"
                   value={newEmpleado.usuario}
-                  onChange={(e) => setNewEmpleado({ ...newEmpleado, usuario: e.target.value })}
+                  onChange={(e) =>
+                    setNewEmpleado({ ...newEmpleado, usuario: e.target.value })
+                  }
                   className="col-span-3"
                 />
               </div>
@@ -327,7 +363,12 @@ export const EmpleadoTableComponent = () => {
                   id="contraseña"
                   type="password"
                   value={newEmpleado.contraseña}
-                  onChange={(e) => setNewEmpleado({ ...newEmpleado, contraseña: e.target.value })}
+                  onChange={(e) =>
+                    setNewEmpleado({
+                      ...newEmpleado,
+                      contraseña: e.target.value,
+                    })
+                  }
                   className="col-span-3"
                 />
               </div>
@@ -335,7 +376,6 @@ export const EmpleadoTableComponent = () => {
             <Button onClick={handleAddEmpleado}>Añadir Empleado</Button>
           </DialogContent>
         </Dialog>
-
       </div>
 
       {/* Tabla de empleados */}
@@ -356,92 +396,174 @@ export const EmpleadoTableComponent = () => {
               <TableCell>{Empleado.Apellido}</TableCell>
               <TableCell>{Empleado.Cargo}</TableCell>
               <TableCell>
-                <Button variant="outline" size="sm" onClick={() => handleOpenStatsModal(Empleado)}>
-                  <BarChart className="mr-2 h-4 w-4" />
-                  Ver Estadísticas
+                <Button variant="outline" size="sm" onClick={() => handleOpenSalesModal(Empleado)}>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Ver Ventas
                 </Button>
               </TableCell>
               <TableCell>
                 <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={() => setempleadoEditado(Empleado)}>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        setempleadoEditado({
+                          id_empleado: Empleado.ID_empleado,
+                          dni: "",
+                          nombre: Empleado.Nombre,
+                          apellido: Empleado.Apellido,
+                          cargo: inversaCargos[Empleado.Cargo],
+                          telefono: Empleado.Telefono,
+                          direccion: Empleado.Direccion,
+                          activo: 1,
+                        })
+                      }
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent aria-describedby="description" >
+                  <DialogContent aria-describedby="description">
                     <DialogHeader>
-                      <DialogTitle>Editar Empleado {Empleado.Nombre}</DialogTitle>
+                      <DialogTitle>
+                        Editar Empleado
+                      </DialogTitle>
                     </DialogHeader>
                     {empleadoEditado && (
                       <div className="grid gap-4 py-4">
                         {/* Nombre */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="edit-name" className="text-right">
+                          <Label
+                            htmlFor="edit-name"
+                            className="text-right"
+                          >
                             Nombre
                           </Label>
                           <Input
                             id="edit-name"
-                            value={empleadoEditado.Nombre}
-                            onChange={(e) => setempleadoEditado({ ...empleadoEditado, Nombre: e.target.value })}
+                            value={empleadoEditado.nombre}
+                            onChange={(e) =>
+                              setempleadoEditado({
+                                ...empleadoEditado,
+                                nombre: e.target.value,
+                              })
+                            }
                             className="col-span-3"
                           />
                         </div>
 
                         {/* Apellido */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="edit-lastName" className="text-right">
+                          <Label
+                            htmlFor="edit-lastName"
+                            className="text-right"
+                          >
                             Apellido
                           </Label>
                           <Input
                             id="edit-lastName"
-                            value={empleadoEditado.Apellido}
-                            onChange={(e) => setempleadoEditado({ ...empleadoEditado, Apellido: e.target.value })}
+                            value={empleadoEditado.apellido}
+                            onChange={(e) =>
+                              setempleadoEditado({
+                                ...empleadoEditado,
+                                apellido: e.target.value,
+                              })
+                            }
                             className="col-span-3"
                           />
                         </div>
 
                         {/* Cargo */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="edit-cargo" className="text-right">
+                          <Label htmlFor="cargo" className="text-right">
                             Cargo
                           </Label>
-                          <Input
+                          <select
                             id="edit-cargo"
-                            value={empleadoEditado.Cargo}
-                            onChange={(e) => setempleadoEditado({ ...empleadoEditado, Cargo: e.target.value })}
-                            className="col-span-3"
-                          />
+                            value={empleadoEditado.cargo}
+                            onChange={(e) =>
+                              setempleadoEditado({
+                                ...empleadoEditado,
+                                cargo: e.target.value,
+                              })
+                            }
+                            className="col-span-3 border rounded-md p-2"
+                          >
+                            <option value="1">Cocinero</option>
+                            <option value="2">Cajero</option>
+                            <option value="3">Repartidor</option>
+                            <option value="4">Gerente</option>
+                            <option value="5">Ayudante</option>
+                          </select>
                         </div>
 
-                        {/* Telefono */}
+                        {/* Teléfono */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="edit-telefono" className="text-right">
+                          <Label
+                            htmlFor="edit-telefono"
+                            className="text-right"
+                          >
                             Teléfono
                           </Label>
                           <Input
                             id="edit-telefono"
-                            value={empleadoEditado.Telefono}
-                            onChange={(e) => setempleadoEditado({ ...empleadoEditado, Telefono: e.target.value })}
+                            value={empleadoEditado.telefono}
+                            onChange={(e) =>
+                              setempleadoEditado({
+                                ...empleadoEditado,
+                                telefono: e.target.value,
+                              })
+                            }
                             className="col-span-3"
                           />
                         </div>
 
                         {/* Dirección */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="edit-direccion" className="text-right">
+                          <Label
+                            htmlFor="edit-direccion"
+                            className="text-right"
+                          >
                             Dirección
                           </Label>
                           <Input
                             id="edit-direccion"
-                            value={empleadoEditado.Direccion}
-                            onChange={(e) => setempleadoEditado({ ...empleadoEditado, Direccion: e.target.value })}
+                            value={empleadoEditado.direccion}
+                            onChange={(e) =>
+                              setempleadoEditado({
+                                ...empleadoEditado,
+                                direccion: e.target.value,
+                              })
+                            }
                             className="col-span-3"
                           />
                         </div>
-                        
+
+                        {/* Activo */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="activo" className="text-right">
+                            Activo
+                          </Label>
+                          <select
+                            id="edit-activo"
+                            value={empleadoEditado?.activo ?? 1} // Si activo es undefined o null, establece el valor predeterminado en 1
+                            onChange={(e) =>
+                              setempleadoEditado({
+                                ...empleadoEditado,
+                                activo: parseInt(e.target.value, 10), // Convertir a número usando parseInt
+                              })
+                            }
+                            className="col-span-3 border rounded-md p-2"
+                          >
+                            <option value={1}>Activo</option>
+                            <option value={0}>Inactivo</option>
+                          </select>
+                        </div>
                       </div>
                     )}
-                    <Button onClick={handleEditEmpleado}>Guardar Cambios</Button>
+                    <Button onClick={handleEditEmpleado}>
+                      Guardar Cambios
+                    </Button>
                   </DialogContent>
                 </Dialog>
               </TableCell>
@@ -451,34 +573,43 @@ export const EmpleadoTableComponent = () => {
       </Table>
 
       {/* Modal de estadísticas */}
-      <Dialog open={isStatsModalOpen} onOpenChange={setIsStatsModalOpen}>
-        <DialogContent aria-describedby="description" className="sm:max-w-[625px]">
-          <DialogHeader>
-            <DialogTitle>Estadísticas de Ventas Semanales</DialogTitle>
-          </DialogHeader>
-          {selectedEmpleadoStats && (
-            <div className="py-4">
-              <h3 className="text-lg font-semibold mb-2">
-                {selectedEmpleadoStats.Nombre} {selectedEmpleadoStats.Apellido}
-              </h3>
-              <Line
-                options={chartOptions}
-                data={{
-                  labels: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
-                  datasets: [
-                    {
-                      label: "Ventas",
-                      data: selectedEmpleadoStats.weeklySales || [0, 0, 0, 0, 0, 0, 0],
-                      borderColor: "rgb(53, 162, 235)",
-                      backgroundColor: "rgba(53, 162, 235, 0.5)",
-                    },
-                  ],
-                }}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <Dialog open={isSalesModalOpen} onOpenChange={setIsSalesModalOpen}>
+  <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Ventas Realizadas</DialogTitle>
+    </DialogHeader>
+    {selectedEmployeeSales && (
+      <div className="py-4">
+        <h3 className="text-lg font-semibold mb-2">
+          {selectedEmployeeSales.Nombre} {selectedEmployeeSales.Apellido}
+        </h3>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Fecha</TableHead>
+              <TableHead>Producto</TableHead>
+              <TableHead className="text-right">Monto</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {selectedEmployeeSales.sales.map((sale) => (
+              <TableRow key={sale.id}>
+                <TableCell>{sale.date}</TableCell>
+                <TableCell>{sale.product}</TableCell>
+                <TableCell className="text-right">
+                  ${sale.amount.toFixed(2)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
+
+
+
     </div>
   );
 };

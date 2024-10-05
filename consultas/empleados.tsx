@@ -6,7 +6,16 @@ interface Employee {
   Telefono: string;
   Direccion: string;
 }
-
+interface EmpleadoUpdate {
+  id_empleado: number;
+  dni: string;
+  nombre: string;
+  apellido: string;
+  cargo: string;
+  telefono: string;
+  direccion: string;
+  activo: number;
+}
 interface newEmployee {
   nombre: string;
   apellido: string;
@@ -26,9 +35,9 @@ export const empleados = async () => {
 
 
 
-export const actualizarEmpleado = async (empleado: Employee) => {
+export const actualizarEmpleado = async (empleado: EmpleadoUpdate) => {
   try {
-    const response = await fetch(`/api/empleados/${empleado.ID_empleado}` , {
+    const response = await fetch(`/api/empleados/${empleado.id_empleado}` , {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -97,3 +106,5 @@ export const crearEmpleado = async (newEmployee : newEmployee) => {
     console.error("Error en la creación:", error);
   }
 };
+
+

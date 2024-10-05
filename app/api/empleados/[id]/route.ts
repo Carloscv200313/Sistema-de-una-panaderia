@@ -34,7 +34,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         // Actualizar datos personales del empleado
         await pool.request()
             .input('ID_empleado', sql.Int, id)              // Cambiar de ID_producto a ID_empleado
-            .input('DNI', sql.VarChar, data.dni)            // Pasar el DNI desde el JSON
             .input('Nombre', sql.VarChar, data.nombre)      // Pasar el nombre desde el JSON
             .input('Apellido', sql.VarChar, data.apellido)  // Pasar el apellido desde el JSON
             .input('Telefono', sql.VarChar, data.telefono)  // Pasar el teléfono desde el JSON

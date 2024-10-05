@@ -1,8 +1,10 @@
+import { SalesSystemComponent } from "@/components/sales-system";
+
 export default function Home() {
 
     return (
         <div>
-            <h1>caja</h1>
+            <SalesSystemComponent />
         </div>
     );
 }

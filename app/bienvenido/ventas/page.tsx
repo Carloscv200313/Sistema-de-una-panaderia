@@ -1,7 +1,8 @@
+import { VentasDetalladasComponent } from "@/components/tabla-ventas";
 export default function Home (){
     return (
         <div>
-            <h1>ventas</h1>
+            <VentasDetalladasComponent/>
         </div>
     );
 }

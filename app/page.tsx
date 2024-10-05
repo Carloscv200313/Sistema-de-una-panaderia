@@ -35,7 +35,11 @@ export default function Home() {
             const data = await response.json();
             console.log(data);
             if (!data.Mensaje) {
-                // Si las credenciales son correctas, redirigir a la página de bienvenida
+                // Guardar ID_empleado y ID_cargo en localStorage
+                localStorage.setItem('ID_empleado', data.ID_empleado);
+                localStorage.setItem('ID_cargo', data.ID_cargo);
+
+                // Redirigir a la página de bienvenida si las credenciales son correctas
                 router.push('/bienvenido');
             } else {
                 // Mostrar un mensaje de error si las credenciales son incorrectas
@@ -122,7 +126,6 @@ export default function Home() {
             </div>
             <div className="relative hidden w-0 flex-1 lg:block">
                 <Image
-                    
                     className="absolute inset-0 h-full w-auto object-cover"
                     src="/img/fondo.webp"
                     alt="Imagen de la empresa"
