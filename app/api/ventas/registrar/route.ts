@@ -6,8 +6,8 @@ export async function POST(request: Request) {
   try {
     const {
       ID_empleado,
-      Cliente_Nombre = "Desconocido", // Nombre por defecto si no se especifica
-      Cliente_Apellido = "Desconocido", // Apellido por defecto si no se especifica
+      Cliente_Nombre , // Nombre por defecto si no se especifica
+      Cliente_Apellido , // Apellido por defecto si no se especifica
       Total,
       ID_estado_venta,
       ID_metodo_pago,

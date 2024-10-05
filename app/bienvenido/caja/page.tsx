@@ -1,4 +1,4 @@
-import { SalesSystemComponent } from "@/components/sales-system";
+import { SalesSystemComponent } from "@/components/caja-ventas";
 
 export default function Home() {
 

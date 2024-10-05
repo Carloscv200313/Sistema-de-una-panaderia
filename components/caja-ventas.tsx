@@ -39,7 +39,16 @@ export const SalesSystemComponent = () => {
   const [estadoVenta, setEstadoVenta] = useState(1); // Default value
   const [nombreCliente, setNombreCliente] = useState("Desconocido");
   const [apellidoCliente, setApellidoCliente] = useState("Desconocido");
+  const [empleadoID, setEmpleadoID] = useState<number | null>(null);
   const { toast } = useToast();
+
+  // Calcular el total de la venta
+  useEffect(() => {
+    const storedEmpleadoID = localStorage.getItem("ID_empleado");
+    if (storedEmpleadoID) {
+      setEmpleadoID(Number(storedEmpleadoID)); // Convertir a número y guardar en el estado
+    }
+  }, []); // Solo se ejecuta al montar el componente
 
   // Calcular el total de la venta
   useEffect(() => {
@@ -139,9 +148,9 @@ export const SalesSystemComponent = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ID_empleado: 1, // ID de empleado temporal
-          NombreCliente: nombreCliente || "Desconocido", // Si no se proporciona, usa 'Desconocido'
-          ApellidoCliente: apellidoCliente || "Desconocido", // Si no se proporciona, usa 'Desconocido'
+          ID_empleado: empleadoID, // ID de empleado temporal
+          Cliente_Nombre: nombreCliente , // Si no se proporciona, usa 'Desconocido'
+          Cliente_Apellido: apellidoCliente , // Si no se proporciona, usa 'Desconocido'
           Total: total,
           ID_estado_venta: estadoVenta,
           ID_metodo_pago: metodoPago,

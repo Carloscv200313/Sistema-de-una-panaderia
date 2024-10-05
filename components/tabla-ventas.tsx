@@ -17,6 +17,8 @@ import { CalendarIcon } from "lucide-react";
 interface VentaDetallada {
     ID_venta: number;
     Fecha: string; // Fecha completa incluyendo hora
+    Dia: string;   // Fecha separada
+    Hora: string;  // Hora separada
     NombreEmpleado: string;
     ApellidoEmpleado: string;
     NombreCliente: string;
@@ -37,29 +39,42 @@ export const VentasDetalladasComponent = () => {
             try {
                 const response = await fetch("/api/ventas");
                 const data = await response.json();
+                
+                console.log("Datos del backend:", data);
+    
+                // Separar la fecha y la hora de cada venta
+                const ventasConFormato = data.map((venta: VentaDetallada) => {
+                    // Separar la fecha y la hora basándonos en "T" (ISO) o en espacio, dependiendo de cómo venga la fecha
+                    const [fecha, hora] = venta.Fecha.includes("T")
+                        ? venta.Fecha.split("T") // Si es formato ISO con "T"
+                        : venta.Fecha.split(" "); // Si es otro formato con espacio
 
-                // Formatear la fecha y la hora de las ventas
-                const ventasConFormato = data.map((venta: VentaDetallada) => ({
-                    ...venta,
-                    Fecha: new Date(venta.Fecha), // Guardar la fecha como Date
-                }));
-
+                    return {
+                        ...venta,
+                        Dia: fecha, // Guardar la fecha separada
+                        Hora: hora ? hora.split(".")[0] : "",  // Guardar la hora separada, sin milisegundos
+                    };
+                });
+    
+                console.log("Ventas con formato (separación de fecha y hora):", ventasConFormato);
+    
                 setVentasDetalladas(ventasConFormato);
             } catch (error) {
                 console.error("Error al cargar ventas detalladas:", error);
             }
         };
-
+    
         fetchVentasDetalladas();
     }, []);
 
     // Filtrar las ventas por la fecha seleccionada
     const filteredVentas = selectedDate
-        ? ventasDetalladas.filter((venta) =>
-            format(new Date(venta.Fecha), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-        )
+        ? ventasDetalladas.filter((venta) => {
+            const ventaFecha = new Date(venta.Dia).toISOString().split('T')[0];
+            const filtroFecha = format(selectedDate, 'yyyy-MM-dd');
+            return ventaFecha === filtroFecha;
+        })
         : ventasDetalladas;
-
 
     const handleDateSelect = (date: Date | undefined) => {
         setSelectedDate(date);
@@ -102,7 +117,8 @@ export const VentasDetalladasComponent = () => {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>ID de Venta</TableHead> {/* Nueva columna para el ID de la venta */}
+                        <TableHead>ID de Venta</TableHead>
+                        <TableHead>Fecha</TableHead>
                         <TableHead>Hora</TableHead>
                         <TableHead>Empleado</TableHead>
                         <TableHead>Cliente</TableHead>
@@ -115,8 +131,9 @@ export const VentasDetalladasComponent = () => {
                 <TableBody>
                     {filteredVentas.map((venta) => (
                         <TableRow key={venta.ID_venta}>
-                            <TableCell>{venta.ID_venta}</TableCell> {/* Mostrar el ID de la venta */}
-                            <TableCell>{format(new Date(venta.Fecha), 'HH:mm')}</TableCell> {/* Mostrar fecha y hora */}
+                            <TableCell>{venta.ID_venta}</TableCell>
+                            <TableCell>{venta.Dia}</TableCell> {/* Mostrar solo la fecha */}
+                            <TableCell>{venta.Hora}</TableCell>  {/* Mostrar solo la hora */}
                             <TableCell>{venta.NombreEmpleado} {venta.ApellidoEmpleado}</TableCell>
                             <TableCell>{venta.NombreCliente} {venta.ApellidoCliente}</TableCell>
                             <TableCell>{venta.ProductosVendidos}</TableCell>

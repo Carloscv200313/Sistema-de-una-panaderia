@@ -382,6 +382,7 @@ export const EmpleadoTableComponent = () => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Id</TableHead>
             <TableHead>Nombre</TableHead>
             <TableHead>Apellido</TableHead>
             <TableHead>Cargo</TableHead>
@@ -392,6 +393,7 @@ export const EmpleadoTableComponent = () => {
         <TableBody>
           {displayEmpleados.map((Empleado) => (
             <TableRow key={Empleado.ID_empleado}>
+              <TableCell>{Empleado.ID_empleado}</TableCell>
               <TableCell>{Empleado.Nombre}</TableCell>
               <TableCell>{Empleado.Apellido}</TableCell>
               <TableCell>{Empleado.Cargo}</TableCell>
