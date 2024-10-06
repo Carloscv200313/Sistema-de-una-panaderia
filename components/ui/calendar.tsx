@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 function Calendar({
   className,
   classNames,
@@ -59,9 +59,11 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      /* eslint-disable @typescript-eslint/no-unused-vars */
+      
       components={{
+        /* eslint-disable @typescript-eslint/no-unused-vars */
         IconLeft: ({ ...props }) => <ChevronLeftIcon className="h-4 w-4" />,
+        /* eslint-disable @typescript-eslint/no-unused-vars */
         IconRight: ({ ...props }) => <ChevronRightIcon className="h-4 w-4" />,
       }}
       {...props}
