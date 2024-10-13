@@ -386,7 +386,7 @@ export const EmpleadoTableComponent = () => {
             <TableHead>Nombre</TableHead>
             <TableHead>Apellido</TableHead>
             <TableHead>Cargo</TableHead>
-            <TableHead>Estadística</TableHead>
+            <TableHead>Ventas</TableHead>
             <TableHead>Editar</TableHead>
           </TableRow>
         </TableHeader>
